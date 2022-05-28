@@ -1,0 +1,22 @@
+{
+  "name": "tiktok-downloader",
+  "version": "1.0.0",
+  "description": "a tool for download all user tiktok videos with(out) watermark",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Gimenz",
+  "repository": {
+    "url": "https://github.com/Gimenz/tiktok-downloader.git"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "async": "^3.2.3",
+    "axios": "^0.27.2",
+    "chalk": "^4.1.2",
+    "inquirer": "^8.2.4",
+    "progress": "^2.0.3"
+  }
+}
