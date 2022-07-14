@@ -41,7 +41,6 @@ if (fs.readFileSync('cookie', 'utf-8') == '') return console.log(chalk.red('[Err
 
         if (select == 'CANCEL') return console.log('[CANCELED]');
         const selected = searchUsername[listusername.indexOf(select)]
-        console.log(selected.user_info);
 
         console.log(
             `\n${chalk.hex('#56CCF2')('##### [ User Info ] #####')}\n` +
