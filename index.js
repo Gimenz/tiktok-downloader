@@ -18,7 +18,7 @@ if (fs.readFileSync('cookie', 'utf-8') == '') return console.log(chalk.red('[Err
         const username = await inquirer
             .prompt([{
                 name: 'username',
-                message: 'Type username/name : '
+                message: 'Type a username/name : '
             },])
             .then(answers => {
                 return answers.username;
@@ -73,14 +73,16 @@ if (fs.readFileSync('cookie', 'utf-8') == '') return console.log(chalk.red('[Err
             let done = false
             while (!done) {
                 const videoList = await getVideoList(selected.user_info.uid, 100, minCursor, maxCursor)
-                console.log('hasMore :', videoList.hasMore, '|', videoList.itemListData.length, 'videos');
-                maxCursor = videoList.maxCursor
-                done = !videoList.hasMore
-                for (let i = 0; i < videoList.itemListData.length; i++) {
-                    videoIds.push({
-                        index: i + 1,
-                        id: videoList.itemListData[i].itemInfos.id
-                    })
+                if (videoList !== undefined) {
+                    console.log('hasMore :', videoList.hasMore, '|', videoList.itemListData.length, 'videos');
+                    maxCursor = videoList.maxCursor
+                    done = !videoList.hasMore
+                    for (let i = 0; i < videoList.itemListData.length; i++) {
+                        videoIds.push({
+                            index: i + 1,
+                            id: videoList.itemListData[i].itemInfos.id
+                        })
+                    }
                 }
             }
 
@@ -91,13 +93,17 @@ if (fs.readFileSync('cookie', 'utf-8') == '') return console.log(chalk.red('[Err
                 console.log('Start Downloading All Videos\n');
 
                 let foldername = `@${selected.user_info.unique_id}`
+                if (!fs.existsSync('download')) fs.mkdirSync('download')
+                if (!fs.existsSync(`download/${foldername}`)) {
+                    fs.mkdirSync(`download/${foldername}`)
+                }
+
+                const getProfilePicture = await axios.get(selected.user_info.avatar_larger.url_list[1], { responseType: 'arraybuffer' })
+                fs.writeFileSync(`./download/${foldername}/@${selected.user_info.unique_id}_profilePic.jpeg`, getProfilePicture.data)
+                fs.writeFileSync(`./download/${foldername}/@${selected.user_info.unique_id}_info.json`, JSON.stringify(selected, null, 2))
 
                 let dl = new Downloader(foldername)
                 await dl.downloadFiles(videoIds)
-
-                const getProfilePicture = await axios.get(selected.user_info.avatar_larger.url_list[1], { responseType: 'arraybuffer' })
-                fs.writeFileSync(`download/${foldername}/@${selected.user_info.unique_id}_profilePic.jpeg`, getProfilePicture.data)
-                fs.writeFileSync(`download/${foldername}/@${selected.user_info.unique_id}_info.json`, JSON.stringify(selected, null, 2))
 
             }
         }
