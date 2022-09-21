@@ -53,42 +53,47 @@ class Downloader {
 
     singleFile = async (link, cb) => {
         // console.log(this.taskDone);
-        this.q.pause()
-        const url = await getDownloadLink(link.id)
-        await axios({
-            url,
-            method: 'GET',
-            responseType: 'stream'
-        }).then(async ({ data, headers }) => {
-            const totalLength = headers['content-length']
+        if (fs.existsSync(path.resolve(__dirname, 'download', this.folder, `${link.id}.mp4`))) {
+            console.log(`[ ${chalk.hex('#f12711')(link.id)} already downloaded! ] ===== [${chalk.hex('#7F7FD5')('skipped')}]`);
+            this.q.remove(x => x.data.id == link.id)
+            this.q.resume()
+        } else {
+            this.q.pause()
+            const url = await getDownloadLink(link.id)
+            await axios({
+                url,
+                method: 'GET',
+                responseType: 'stream'
+            }).then(async ({ data, headers }) => {
+                const totalLength = headers['content-length']
 
-            const progressBar = new ProgressBar(`[${chalk.hex('#99f2c8')(link.index)}] [ ${chalk.hex('#ffff1c')(link.id)} ] [${chalk.hex('#6be585')(':bar')}] :percent downloaded in :elapseds`, {
-                width: 40,
-                complete: '=',
-                incomplete: '+',
-                renderThrottle: 1,
-                total: parseInt(totalLength)
-            })
+                const progressBar = new ProgressBar(`[${chalk.hex('#99f2c8')(link.index)}] [ ${chalk.hex('#ffff1c')(link.id)} ] [${chalk.hex('#6be585')(':bar')}] :percent downloaded in :elapseds`, {
+                    width: 40,
+                    complete: '=',
+                    incomplete: '+',
+                    renderThrottle: 1,
+                    total: parseInt(totalLength)
+                })
 
-            let foldername = this.folder
-            if (!fs.existsSync('download')) fs.mkdirSync('download')
-            if (!fs.existsSync(`download/${foldername}`)) {
-                fs.mkdirSync(`download/${foldername}`)
-            }
+                let foldername = this.folder
+                if (!fs.existsSync('download')) fs.mkdirSync('download')
+                if (!fs.existsSync(`download/${foldername}`)) {
+                    fs.mkdirSync(`download/${foldername}`)
+                }
 
-            data.on('data', (chunk) => {
-                progressBar.tick(chunk.length)
+                data.on('data', (chunk) => {
+                    progressBar.tick(chunk.length)
+                })
+                data.on('end', () => {
+                    // console.log(`✓ [ ${link} ] Downloaded.`);
+                    // cb()
+                    this.q.resume()
+                    this.taskDone = this.taskDone + 1
+                })
+                const writer = fs.createWriteStream(path.resolve(__dirname, 'download', foldername, `${link.id}.mp4`))
+                data.pipe(writer)
             })
-            data.on('end', () => {
-                // console.log(`✓ [ ${link} ] Downloaded.`);
-                // cb()
-                this.q.resume()
-                this.taskDone = this.taskDone + 1
-                global.task = this
-            })
-            const writer = fs.createWriteStream(path.resolve(__dirname, 'download', foldername, `${link.id}.mp4`))
-            data.pipe(writer)
-        })
+        }
     }
 }
 
@@ -172,8 +177,9 @@ async function getVideoList(userId, count = 100, minCursor = 0, maxCursor = 0) {
 // getVideoList('6847876230878020609').then(x => console.log(x.itemListData.length))
 
 async function getDownloadLink(id) {
-    const res = await axios.get('https://api2.musical.ly/aweme/v1/aweme/detail/?aweme_id=' + id, { headers })
-    return res.data.aweme_detail.video.play_addr.url_list[0]
+    const res = await axios.get('https://api2.musical.ly/aweme/v1/feed/?aweme_id=' + id, { headers })
+    const filtered = res.data.aweme_list.find(x => x.aweme_id == id)
+    return filtered.video.play_addr.url_list[0]
 }
 
 module.exports = {
