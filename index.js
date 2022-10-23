@@ -68,20 +68,21 @@ if (fs.readFileSync('cookie', 'utf-8') == '') return console.log(chalk.red('[Err
             correct = true
             let videoIds = []
             console.log('Scraping All Video IDs');
-            let minCursor = 0
-            let maxCursor = 0
+            let cursor = 0
+            let index = 1
             let done = false
             while (!done) {
-                const videoList = await getVideoList(selected.user_info.uid, 100, minCursor, maxCursor)
+                const videoList = await getVideoList(selected.user_info.uid, 30, cursor, selected.user_info.sec_uid)
                 if (videoList !== undefined) {
-                    console.log('hasMore :', videoList.hasMore, '|', videoList.itemListData.length, 'videos');
-                    maxCursor = videoList.maxCursor
+                    console.log('hasMore :', videoList.hasMore, '|', videoList.itemList.length, 'videos');
+                    cursor = videoList.cursor
                     done = !videoList.hasMore
-                    for (let i = 0; i < videoList.itemListData.length; i++) {
+                    for (let i = 0; i < videoList.itemList.length; i++) {
                         videoIds.push({
-                            index: i + 1,
-                            id: videoList.itemListData[i].itemInfos.id
+                            index: index,
+                            id: videoList.itemList[i].id
                         })
+                        index++
                     }
                 }
             }

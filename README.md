@@ -20,9 +20,10 @@ npm start
 
 ## Donate me
 
+- [PayPal](https://paypal.me/masgimenz)
 - [Saweria](https://saweria.co/masgimenz)
 - [QRIS](https://masgimenz.com/static/qris.PNG)
-  <img src="https://masgimenz.com/static/qris.PNG" width="30%" href="">
+  <img src="https://masgimenz.com/static/qris.PNG" width="25%" href="">
 
 ## Contributing
 

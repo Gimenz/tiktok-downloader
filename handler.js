@@ -59,40 +59,43 @@ class Downloader {
             this.q.resume()
         } else {
             this.q.pause()
-            const url = await getDownloadLink(link.id)
-            await axios({
-                url,
-                method: 'GET',
-                responseType: 'stream'
-            }).then(async ({ data, headers }) => {
-                const totalLength = headers['content-length']
+            try {
+                const url = await getDownloadLink(link.id)
+                await axios({
+                    url,
+                    method: 'GET',
+                    responseType: 'stream'
+                }).then(async ({ data, headers }) => {
+                    const totalLength = headers['content-length']
 
-                const progressBar = new ProgressBar(`[${chalk.hex('#99f2c8')(link.index)}] [ ${chalk.hex('#ffff1c')(link.id)} ] [${chalk.hex('#6be585')(':bar')}] :percent downloaded in :elapseds`, {
-                    width: 40,
-                    complete: '=',
-                    incomplete: '+',
-                    renderThrottle: 1,
-                    total: parseInt(totalLength)
-                })
+                    const progressBar = new ProgressBar(`[${chalk.hex('#99f2c8')(link.index)}] [ ${chalk.hex('#ffff1c')(link.id)} ] [${chalk.hex('#6be585')(':bar')}] :percent downloaded in :elapseds`, {
+                        width: 40,
+                        complete: '<',
+                        incomplete: '•',
+                        renderThrottle: 1,
+                        total: parseInt(totalLength)
+                    })
 
-                let foldername = this.folder
-                if (!fs.existsSync('download')) fs.mkdirSync('download')
-                if (!fs.existsSync(`download/${foldername}`)) {
-                    fs.mkdirSync(`download/${foldername}`)
-                }
+                    let foldername = this.folder
+                    if (!fs.existsSync('download')) fs.mkdirSync('download')
+                    if (!fs.existsSync(`download/${foldername}`)) {
+                        fs.mkdirSync(`download/${foldername}`)
+                    }
 
-                data.on('data', (chunk) => {
-                    progressBar.tick(chunk.length)
+                    data.on('data', (chunk) => {
+                        progressBar.tick(chunk.length)
+                    })
+                    data.on('end', () => {
+                        this.q.resume()
+                        this.taskDone = this.taskDone + 1
+                    })
+                    const writer = fs.createWriteStream(path.resolve(__dirname, 'download', foldername, `${link.id}.mp4`))
+                    data.pipe(writer)
                 })
-                data.on('end', () => {
-                    // console.log(`✓ [ ${link} ] Downloaded.`);
-                    // cb()
-                    this.q.resume()
-                    this.taskDone = this.taskDone + 1
-                })
-                const writer = fs.createWriteStream(path.resolve(__dirname, 'download', foldername, `${link.id}.mp4`))
-                data.pipe(writer)
-            })
+            } catch (error) {
+                console.log(`[ ${chalk.hex('#f12711')(link.id)} got error while trying to get video data! ] ===== [${chalk.hex('#7F7FD5')('skipped')}]`);
+                this.q.resume()
+            }
         }
     }
 }
@@ -169,9 +172,16 @@ async function searchUser(username) {
 // new TikTok().searchUser('lailaindahb')
 // searchUser('lailaindahb')
 
-async function getVideoList(userId, count = 100, minCursor = 0, maxCursor = 0) {
-    const res = await axios.get(`https://m.tiktok.com/share/item/list?id=${userId}&type=1&count=${count}&minCursor=${minCursor}&maxCursor=${maxCursor}`, { headers })
-    return res.data.body
+async function getVideoList(userId, count = 30, cursor = 0, secUid = 0) {
+    const query = {
+        id: userId,
+        aid: 1988,
+        count,
+        cursor,
+        secUid
+    }
+    const res = await axios.get(`https://m.tiktok.com/api/post/item_list`, { headers, params: query })
+    return res.data
 }
 
 // getVideoList('6847876230878020609').then(x => console.log(x.itemListData.length))
