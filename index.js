@@ -78,10 +78,10 @@ if (fs.readFileSync('cookie', 'utf-8') == '') return console.log(chalk.red('[Err
                     const videoList = await getVideoList(selected.user_info.sec_uid, 30, cursor)
                     if (videoList !== undefined) {
                         const hasMore = videoList.hasMore
-                        console.log('hasMore :', hasMore, '|', videoList.itemList.length, 'videos');
+                        console.log('hasMore :', hasMore, '|', Object.keys(videoList).length, 'videos');
                         cursor = videoList.cursor
                         done = !hasMore
-                        for (let i = 0; i < videoList.itemList.length; i++) {
+                        for (let i = 0; i < Object.keys(videoList).length; i++) {
                             videoIds.push({
                                 index: index,
                                 id: videoList.itemList[i].video.id
