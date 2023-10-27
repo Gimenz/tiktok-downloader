@@ -183,22 +183,54 @@ class TikTok {
 // fixed by using this code : https://github.com/mominkali/tikdate/blob/3bf790be9ae19f727e2956f0764b0f0fff3bf21e/tikdate.py
 async function searchUser(username) {
     try {
-        const path = `/aweme/v1/discover/search/`
-            + `?keyword=` + username
-            + `&cursor=0`
-            + `&count=10`
-            + `&type=1`
-            + `&hot_search=0`
-            + `&search_source=discover`
-        const { data } = await axios.get(`https://api-t2.tiktokv.com${path}${new URLSearchParams(params).toString()}`, {
+        // const path = `/aweme/v1/discover/search/`
+        //     + `?keyword=` + username
+        //     + `&cursor=0`
+        //     + `&count=10`
+        //     + `&type=1`
+        //     + `&hot_search=0`
+        //     + `&search_source=discover`
+        // const { data } = await axios.get(`https://api-t2.tiktokv.com${path}${new URLSearchParams(params).toString()}`, {
+        //     headers,
+        // });
+        let ob = {
+            WebIdLastTime: '1688494715',
+            aid: '1988',
+            app_language: 'en',
+            app_name: 'tiktok_web',
+            browser_language: 'en-US',
+            browser_name: 'Mozilla',
+            browser_online: 'true',
+            browser_platform: 'Win32',
+            browser_version: '5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36',
+            channel: 'tiktok_web',
+            cookie_enabled: 'true',
+            cursor: '0',
+            device_id: '7252029459376145938',
+            device_platform: 'web_pc',
+            focus_state: 'true',
+            from_page: 'search',
+            history_len: '6',
+            is_fullscreen: 'false',
+            is_page_visible: 'true',
+            keyword: username,
+            os: 'windows',
+            priority_region: 'ID',
+            referer: '',
+            region: 'ID',
+            screen_height: '1080',
+            screen_width: '1920',
+            tz_name: 'Asia/Jakarta',
+        }
+        const { data } = await axios.get(`https://www.tiktok.com/api/search/user/full/?${new URLSearchParams(ob).toString()}`, {
             headers,
         });
-        // console.log(data);
         return data.user_list;
     } catch (error) {
         console.log(error);
     }
 }
+
 
 // new TikTok().searchUser('lailaindahb')
 // searchUser('lailaindahb')
@@ -232,7 +264,27 @@ async function getVideoList(secUid, count = 30, cursor = 0) {
     return res.data
 }
 
-// getVideoList('MS4wLjABAAAAPkIdksWtpSxQgc5NjgJIzN3mHuS7hVxaGq7VaNPEJSU').then(x => console.log(x))
+// getVideoList('MS4wLjABAAAAhTM8wOJKVpWISS_rX1VOjxDhkZtVPGW9jwOxPJe2k_H8IFqwEMRTGjkTTdp4w-if').then(x => console.log(x))
+// const { TikTokClient } = require('./node_modules/tiktok-private-api/build/index');
+
+// (async () => {
+//     const scraper = new TikTokClient();
+//     scraper.state.defaultHeaders = {
+//         ...scraper.state.defaultHeaders,
+//         "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+//         "sec-ch-ua": '"Not?A_Brand";v="8", "Chromium";v="108", "Google Chrome";v="108"',
+//     };
+
+//     // scraper.state.defaultApiHeaders.cookie = cookie
+//     // scraper.state.defaultHeaders.cookie = cookie
+
+//     const usr = await scraper.user.info('marfamoela')
+//     const data = await scraper.user.videos(usr.userInfo.id, usr.userInfo.secUid, 30, 0)
+
+//     console.log(data);
+// })();
+// scraper.user.videos('MS4wLjABAAAAHYX7r5EzjxLQ7whZLAwpscERO7k4L18xgWqt0ShUj29dsupS6eH8LtCVWPVPDOzP', '0', '0').then(x => console.log(x))
+
 
 async function getDownloadLink(id) {
     const res = await axios.get('https://api2.musical.ly/aweme/v1/feed/?aweme_id=' + id, { headers })

@@ -75,6 +75,7 @@ if (fs.readFileSync('cookie', 'utf-8') == '') return console.log(chalk.red('[Err
                 let index = 1
                 let done = false
                 while (!done) {
+                    // console.log(selected);
                     const videoList = await getVideoList(selected.user_info.sec_uid, 30, cursor)
                     if (videoList !== undefined) {
                         const hasMore = videoList.hasMore
@@ -103,8 +104,8 @@ if (fs.readFileSync('cookie', 'utf-8') == '') return console.log(chalk.red('[Err
                         fs.mkdirSync(`download/${foldername}`)
                     }
 
-                    const getProfilePicture = await axios.get(selected.user_info.avatar_larger.url_list[1], { responseType: 'arraybuffer' })
-                    fs.writeFileSync(`./download/${foldername}/@${selected.user_info.unique_id}_profilePic.jpeg`, getProfilePicture.data)
+                    // const getProfilePicture = await axios.get(selected.user_info.avatar_thumb.url_list[1], { responseType: 'arraybuffer' })
+                    // fs.writeFileSync(`./download/${foldername}/@${selected.user_info.unique_id}_profilePic.jpeg`, getProfilePicture.data)
                     fs.writeFileSync(`./download/${foldername}/@${selected.user_info.unique_id}_info.json`, JSON.stringify(selected, null, 2))
 
                     let dl = new Downloader(foldername)
