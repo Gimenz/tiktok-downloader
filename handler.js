@@ -8,7 +8,9 @@ const chalk = require('chalk');
 const delay = ms => new Promise((resolve) => setTimeout(resolve, ms))
 let cookieString = fs.readFileSync('cookie', 'utf-8')
 let cookie = convertCookie(cookieString)
-const crypto = require('crypto')
+const crypto = require('crypto');
+const { TikTokClient } = require('tiktok-private-api')
+const TikTokApi = new TikTokClient();
 global.task
 
 function convertCookie(cookies) {
@@ -49,7 +51,8 @@ const _defaultApiParams = {
 };
 
 const headers = {
-    'user-agent': 'com.zhiliaoapp.musically/2022405010 (Linux; U; Android 7.1.2; en; ASUS_Z01QD; Build/N2G48H;tt-ok/3.12.13.1)',
+    // 'user-agent': 'com.zhiliaoapp.musically/2022405010 (Linux; U; Android 7.1.2; en; ASUS_Z01QD; Build/N2G48H;tt-ok/3.12.13.1)',
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.35',
     cookie
 }
 
@@ -246,22 +249,20 @@ async function getUserInfo(user) {
 
 
 async function getVideoList(secUid, count = 30, cursor = 0) {
-    const param = {
-        ..._defaultApiParams,
-        secUid: secUid,
-        cursor: cursor,
-        count: count,
-        is_encryption: 1,
-    }
-    const xTTParams = xttparams(new URLSearchParams(param).toString())
-    const res = await axios.get('https://www.tiktok.com/api/post/item_list/?aid=1988&app_language=en&app_name=tiktok_web&battery_info=1&browser_language=en-US&browser_name=Mozilla&browser_online=true&browser_platform=Win32&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F107.0.0.0%20Safari%2F537.36%20Edg%2F107.0.1418.35&channel=tiktok_web&cookie_enabled=true&device_id=7002566096994190854&device_platform=web_pc&focus_state=false&from_page=user&history_len=3&is_fullscreen=false&is_page_visible=true&os=windows&priority_region=RO&referer=https%3A%2F%2Fexportcomments.com%2F&region=RO&root_referer=https%3A%2F%2Fexportcomments.com%2F&screen_height=1440&screen_width=2560&tz_name=Europe%2FBucharest&verifyFp=verify_lacphy8d_z2ux9idt_xdmu_4gKb_9nng_NNTTTvsFS8ao&webcast_language=en&msToken=7UfjxOYL5mVC8QFOKQRhmLR3pCjoxewuwxtfFIcPweqC05Q6C_qjW-5Ba6_fE5-fkZc0wkLSWaaesA4CZ0LAqRrXSL8b88jGvEjbZPwLIPnHeyQq6VifzyKf5oGCQNw_W4Xq12Q-8KCuyiKGLOw=&X-Bogus=DFSzswVL-XGANHVWS0OnS2XyYJUm', {
-        headers: {
-            ...headers,
-            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.35',
-            "x-tt-params": xTTParams,
-        }
-    })
-    return res.data
+    const scraper = new TikTokClient();
+    scraper.state.defaultHeaders = {
+        ...scraper.state.defaultHeaders,
+        ...headers
+    };
+
+    // scraper.state.defaultApiHeaders.cookie = cookie
+    // scraper.state.defaultHeaders.cookie = cookie
+
+    // const usr = await scraper.user.info('_nvtaaa.a')
+    // console.log(usr);
+    const data = await scraper.user.videos('', secUid, count, cursor)
+
+    return data
 }
 
 // getVideoList('MS4wLjABAAAAhTM8wOJKVpWISS_rX1VOjxDhkZtVPGW9jwOxPJe2k_H8IFqwEMRTGjkTTdp4w-if').then(x => console.log(x))
@@ -278,12 +279,13 @@ async function getVideoList(secUid, count = 30, cursor = 0) {
 //     // scraper.state.defaultApiHeaders.cookie = cookie
 //     // scraper.state.defaultHeaders.cookie = cookie
 
-//     const usr = await scraper.user.info('marfamoela')
+//     const usr = await scraper.user.info('_nvtaaa.a')
+//     console.log(usr);
 //     const data = await scraper.user.videos(usr.userInfo.id, usr.userInfo.secUid, 30, 0)
 
 //     console.log(data);
+//     // scraper.user.videos('MS4wLjABAAAAHYX7r5EzjxLQ7whZLAwpscERO7k4L18xgWqt0ShUj29dsupS6eH8LtCVWPVPDOzP', '0', '0').then(x => console.log(x))
 // })();
-// scraper.user.videos('MS4wLjABAAAAHYX7r5EzjxLQ7whZLAwpscERO7k4L18xgWqt0ShUj29dsupS6eH8LtCVWPVPDOzP', '0', '0').then(x => console.log(x))
 
 
 async function getDownloadLink(id) {

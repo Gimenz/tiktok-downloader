@@ -43,6 +43,7 @@ if (fs.readFileSync('cookie', 'utf-8') == '') return console.log(chalk.red('[Err
             if (select == 'CANCEL') return console.log('[CANCELED]');
             const selected = searchUsername[listusername.indexOf(select)]
 
+            console.log(selected.user_info);
             console.log(
                 `\n${chalk.hex('#56CCF2')('##### [ User Info ] #####')}\n` +
                 chalk.hex('#78ffd6')(
@@ -76,6 +77,7 @@ if (fs.readFileSync('cookie', 'utf-8') == '') return console.log(chalk.red('[Err
                 let done = false
                 while (!done) {
                     // console.log(selected);
+                    // TO-DO: Download Images
                     const videoList = await getVideoList(selected.user_info.sec_uid, 30, cursor)
                     if (videoList !== undefined) {
                         const hasMore = videoList.hasMore
