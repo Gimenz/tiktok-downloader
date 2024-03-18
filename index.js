@@ -2,10 +2,8 @@ const { Downloader, formatK, searchUser, getVideoList, getDownloadLink } = requi
 const fs = require('fs');
 const inquirer = require('inquirer');
 const chalk = require('chalk');
-const { default: axios } = require('axios');
 
-if (!fs.existsSync('cookie')) return console.log(chalk.red('[Error]'), 'Cookie Not FOund! please set cookie first');
-if (fs.readFileSync('cookie', 'utf-8') == '') return console.log(chalk.red('[Error]'), 'Cookie Not FOund! please set cookie first');
+if (!fs.existsSync('cookie')) return console.log(chalk.redBright('[WARNING]'), 'Cookie Not FOund! please set cookie first');
 
 (async () => {
     try {
@@ -43,17 +41,13 @@ if (fs.readFileSync('cookie', 'utf-8') == '') return console.log(chalk.red('[Err
             if (select == 'CANCEL') return console.log('[CANCELED]');
             const selected = searchUsername[listusername.indexOf(select)]
 
-            console.log(selected.user_info);
             console.log(
                 `\n${chalk.hex('#56CCF2')('##### [ User Info ] #####')}\n` +
                 chalk.hex('#78ffd6')(
-                    `Username : @${selected.user_info.unique_id}\n` +
-                    `Nickname : ${selected.user_info.nickname}\n` +
-                    `Post : ${selected.user_info.aweme_count}\n` +
+                    `@${selected.user_info.unique_id} | ${selected.user_info.nickname}\n` +
                     `Private : ${selected.user_info.secret == 1 ? true : false}\n` +
-                    `Bio : ${selected.user_info.signature}\n` +
-                    `Followers : ${formatK(selected.user_info.follower_count)}\n` +
-                    `Following : ${formatK(selected.user_info.following_count)}\n`)
+                    `Followers : ${formatK(selected.user_info.follower_count)}\n`
+                )
             )
 
             // return console.log(selected.user_info);
@@ -71,33 +65,44 @@ if (fs.readFileSync('cookie', 'utf-8') == '') return console.log(chalk.red('[Err
             if (validate) {
                 correct = true
                 let videoIds = []
+                let postCount = 0;
                 console.log('Scraping All Video IDs');
                 let cursor = 0
-                let index = 1
                 let done = false
                 while (!done) {
-                    // console.log(selected);
-                    // TO-DO: Download Images
                     const videoList = await getVideoList(selected.user_info.sec_uid, 30, cursor)
                     if (videoList !== undefined) {
                         const hasMore = videoList.hasMore
-                        console.log('hasMore :', hasMore, '|', videoList.itemList.length, 'videos');
                         cursor = videoList.cursor
+                        postCount = postCount + videoList.itemList.length
+                        console.log('hasMore :', hasMore, '|', videoList.itemList.length, 'post', cursor);
                         done = !hasMore
                         for (let i = 0; i < videoList.itemList.length; i++) {
-                            videoIds.push({
-                                index: index,
-                                id: videoList.itemList[i].video.id
-                            })
-                            index++
+                            if (videoList.itemList[i]?.imagePost) {
+                                videoList.itemList[i]?.imagePost?.images.forEach((val, idx) => {
+                                    videoIds.push({
+                                        index: i + 1,
+                                        type: 'image',
+                                        id: videoList.itemList[i].id,
+                                        img_index: idx + 1,
+                                        img_url: val.imageURL.urlList[0],
+                                        title: videoList.itemList[i]?.imagePost?.title || videoList.itemList[i].id
+                                    })
+                                })
+                            } else {
+                                videoIds.push({
+                                    index: i + 1,
+                                    type: 'video',
+                                    id: videoList.itemList[i].id
+                                })
+                            }
                         }
                     }
                 }
 
                 if (done) {
-
                     if (videoIds.length == 0) return console.log('No videos found!');
-                    console.log(`\nFound ${videoIds.length} videos from @${selected.user_info.unique_id}\n`);
+                    console.log(`\nFound ${postCount} posts from @${selected.user_info.unique_id}\n`);
                     console.log('Start Downloading All Videos\n');
 
                     let foldername = `@${selected.user_info.unique_id}`
@@ -106,8 +111,6 @@ if (fs.readFileSync('cookie', 'utf-8') == '') return console.log(chalk.red('[Err
                         fs.mkdirSync(`download/${foldername}`)
                     }
 
-                    // const getProfilePicture = await axios.get(selected.user_info.avatar_thumb.url_list[1], { responseType: 'arraybuffer' })
-                    // fs.writeFileSync(`./download/${foldername}/@${selected.user_info.unique_id}_profilePic.jpeg`, getProfilePicture.data)
                     fs.writeFileSync(`./download/${foldername}/@${selected.user_info.unique_id}_info.json`, JSON.stringify(selected, null, 2))
 
                     let dl = new Downloader(foldername)

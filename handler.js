@@ -6,56 +6,25 @@ const path = require('path')
 const async = require('async');
 const chalk = require('chalk');
 const delay = ms => new Promise((resolve) => setTimeout(resolve, ms))
-let cookieString = fs.readFileSync('cookie', 'utf-8')
-let cookie = convertCookie(cookieString)
 const crypto = require('crypto');
-const { TikTokClient } = require('tiktok-private-api')
-const TikTokApi = new TikTokClient();
+const { TikTokClient } = require('./node_modules/tiktok-private-api/build/index')
 global.task
 
 function convertCookie(cookies) {
+    let cookie;
     try {
-        return JSON.parse(cookies).map(x => `${x.name}=${x.value}`).join('; ')
+        cookie = JSON.parse(cookies).map(x => `${x.name}=${x.value}`).join('; ')
     } catch (error) {
-        return cookies
+        cookie = cookies
     }
+    return cookie
 }
 
-// https://github.com/atharahmed/tiktok-private-api/blob/main/src/services/signer.service.ts
-function xttparams(params) {
-    // Encrypt query string using aes-128-cbc
-    const cipher = createCipheriv(
-        "aes-128-cbc",
-        "webapp1.0+202106",
-        "webapp1.0+202106"
-    );
-    return Buffer.concat([cipher.update(params), cipher.final()]).toString(
-        "base64"
-    );
-}
-
-const _defaultApiParams = {
-    aid: "1988",
-    count: 30,
-    secUid: null,
-    cursor: 0,
-    cookie_enabled: true,
-    screen_width: 0,
-    screen_height: 0,
-    browser_language: "",
-    browser_platform: "",
-    browser_name: "",
-    browser_version: "",
-    browser_online: "",
-    timezone_name: "Europe/London",
-};
-
-const headers = {
-    // 'user-agent': 'com.zhiliaoapp.musically/2022405010 (Linux; U; Android 7.1.2; en; ASUS_Z01QD; Build/N2G48H;tt-ok/3.12.13.1)',
+let cookie = fs.existsSync('cookie') ? convertCookie(fs.readFileSync('cookie', 'utf-8')) : ''
+let headers = {
     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.35',
     cookie
 }
-
 // https://stackoverflow.com/questions/57362319/how-to-download-files-one-by-one-in-node-js
 class Downloader {
     constructor(folder) {
@@ -87,34 +56,40 @@ class Downloader {
 
     singleFile = async (link, cb) => {
         // console.log(this.taskDone);
-        if (fs.existsSync(path.resolve(__dirname, 'download', this.folder, `${link.id}.mp4`))) {
-            console.log(`[ ${chalk.hex('#f12711')(link.id)} already downloaded! ] ===== [${chalk.hex('#7F7FD5')('skipped')}]`);
+        let foldername = this.folder
+        const mediaPath = link.type == 'image' ? `download/${foldername}/${link.title}` : `download/${foldername}`
+        const fileName = link.type == 'image' ? `${link.id}_${link.img_index}.jpeg` : `${link.id}.mp4`
+        if (!fs.existsSync('download')) fs.mkdirSync('download')
+        if (!fs.existsSync(mediaPath)) {
+            fs.mkdirSync(mediaPath)
+        }
+
+        if (fs.existsSync(mediaPath + '/' + fileName)) {
+            console.log(`[${chalk.hex('#99f2c8')(link.index)}] [ ${chalk.hex('#f12711')(link.id)} ] [ ${chalk.hex('#f12711')('already downloaded!')} ] ==> [${chalk.hex('#7F7FD5')('skipped')}]`);
             this.q.remove(x => x.data.id == link.id)
             this.q.resume()
         } else {
             this.q.pause()
             try {
-                const url = await getDownloadLink(link.id)
+                const url = link.type == 'video' ? await getDownloadLink(link.id) : link.img_url
                 await axios({
                     url,
                     method: 'GET',
                     responseType: 'stream'
                 }).then(async ({ data, headers }) => {
                     const totalLength = headers['content-length']
-
-                    const progressBar = new ProgressBar(`[${chalk.hex('#99f2c8')(link.index)}] [ ${chalk.hex('#ffff1c')(link.id)} ] [${chalk.hex('#6be585')(':bar')}] :percent downloaded in :elapseds`, {
+                    let log = `[${chalk.hex('#FCE4EC')(link.index)}] ` +
+                        `[ ${chalk.hex('#00B0FF')(link.id)} ] ` +
+                        `[ ${link.type == 'video' ? chalk.hex('#916eff')('video') : chalk.hex('#aaf255')('image')} ${link.type == 'video' ? '' : `${chalk.hex('#ffff1c')(`${link.img_index}`)}`} ] ` +
+                        `[ ${chalk.hex('#6be585')(':bar')}] ` +
+                        `:percent downloaded in :elapseds`
+                    const progressBar = new ProgressBar(log, {
                         width: 40,
                         complete: '<',
                         incomplete: '•',
-                        renderThrottle: 1,
+                        renderThrottle: 10,
                         total: parseInt(totalLength)
                     })
-
-                    let foldername = this.folder
-                    if (!fs.existsSync('download')) fs.mkdirSync('download')
-                    if (!fs.existsSync(`download/${foldername}`)) {
-                        fs.mkdirSync(`download/${foldername}`)
-                    }
 
                     data.on('data', (chunk) => {
                         progressBar.tick(chunk.length)
@@ -123,7 +98,8 @@ class Downloader {
                         this.q.resume()
                         this.taskDone = this.taskDone + 1
                     })
-                    const writer = fs.createWriteStream(path.resolve(__dirname, 'download', foldername, `${link.id}.mp4`))
+                    // const writer = fs.createWriteStream(path.resolve(__dirname, 'download', foldername, `${link.id}.mp4`))
+                    const writer = fs.createWriteStream(mediaPath + '/' + fileName)
                     data.pipe(writer)
                 })
             } catch (error) {
@@ -138,64 +114,10 @@ const formatK = (n) => {
     return Number(n).toLocaleString('en', { notation: 'compact' })
 }
 
-let params = {
-    device_id: '6158568364873266588',
-    version_code: '100303',
-    build_number: '10.3.3',
-    version_name: '10.3.3',
-    aid: '1233',
-    app_name: 'musical_ly',
-    app_language: 'en',
-    channel: 'googleplay',
-    device_platform: 'android',
-    device_brand: 'Google',
-    device_type: 'Pixel',
-    os_version: '9.0.0'
-}
-
-class TikTok {
-    constructor() { }
-
-    headers = {
-        "User-Agent": "okhttp",
-    }
-    RequestAweme = async (path, method = 'GET') => {
-        let url = `https://api-t2.tiktokv.com${path}${new URLSearchParams(params).toString()}`
-
-        return await axios({
-            url,
-            method,
-            headers: headers
-        })
-    }
-
-    searchUser = async (username) => {
-        const endpoint = `/aweme/v1/discover/search/`
-            + `?keyword=` + username
-            + `&cursor=0`
-            + `&count=10`
-            + `&type=1`
-            + `&hot_search=0`
-            + `&search_source=discover`
-
-        const res = await this.RequestAweme(endpoint, 'GET')
-        console.log(res);
-    }
-}
 
 // fixed by using this code : https://github.com/mominkali/tikdate/blob/3bf790be9ae19f727e2956f0764b0f0fff3bf21e/tikdate.py
 async function searchUser(username) {
     try {
-        // const path = `/aweme/v1/discover/search/`
-        //     + `?keyword=` + username
-        //     + `&cursor=0`
-        //     + `&count=10`
-        //     + `&type=1`
-        //     + `&hot_search=0`
-        //     + `&search_source=discover`
-        // const { data } = await axios.get(`https://api-t2.tiktokv.com${path}${new URLSearchParams(params).toString()}`, {
-        //     headers,
-        // });
         let ob = {
             WebIdLastTime: '1688494715',
             aid: '1988',
@@ -226,7 +148,10 @@ async function searchUser(username) {
             tz_name: 'Asia/Jakarta',
         }
         const { data } = await axios.get(`https://www.tiktok.com/api/search/user/full/?${new URLSearchParams(ob).toString()}`, {
-            headers,
+            headers: {
+                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.35',
+                cookie
+            },
         });
         return data.user_list;
     } catch (error) {
@@ -235,61 +160,47 @@ async function searchUser(username) {
 }
 
 
-// new TikTok().searchUser('lailaindahb')
-// searchUser('lailaindahb')
-
-async function getUserInfo(user) {
-    const res = await axios.get(`https://api.tiktokv.com/aweme/v1/multi/aweme/detail/?aweme_ids=%5B{${user}}%5D`, {
-        headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36",
-        }
-    })
-    return res.data
-}
-
-
 async function getVideoList(secUid, count = 30, cursor = 0) {
-    const scraper = new TikTokClient();
-    scraper.state.defaultHeaders = {
-        ...scraper.state.defaultHeaders,
-        ...headers
-    };
-
-    // scraper.state.defaultApiHeaders.cookie = cookie
-    // scraper.state.defaultHeaders.cookie = cookie
-
-    // const usr = await scraper.user.info('_nvtaaa.a')
-    // console.log(usr);
-    const data = await scraper.user.videos('', secUid, count, cursor)
-
-    return data
+    try {
+        const TikTokApi = new TikTokClient();
+        TikTokApi.state.defaultHeaders = {
+            headers
+        };
+        const data = await TikTokApi.user.videos('', secUid, count, cursor)
+        // console.log(data);
+        return data
+    } catch (error) {
+        console.log(error);
+    }
 }
 
-// getVideoList('MS4wLjABAAAAhTM8wOJKVpWISS_rX1VOjxDhkZtVPGW9jwOxPJe2k_H8IFqwEMRTGjkTTdp4w-if').then(x => console.log(x))
+// getVideoList('MS4wLjABAAAAHYX7r5EzjxLQ7whZLAwpscERO7k4L18xgWqt0ShUj29dsupS6eH8LtCVWPVPDOzP').then(x => {
+//     console.log(x.itemList)
+// })
 // const { TikTokClient } = require('./node_modules/tiktok-private-api/build/index');
 
 // (async () => {
-//     const scraper = new TikTokClient();
-//     scraper.state.defaultHeaders = {
-//         ...scraper.state.defaultHeaders,
+//     const TikTokApi = new TikTokClient();
+//     TikTokApi.state.defaultHeaders = {
+//         ...TikTokApi.state.defaultHeaders,
 //         "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
 //         "sec-ch-ua": '"Not?A_Brand";v="8", "Chromium";v="108", "Google Chrome";v="108"',
 //     };
 
-//     // scraper.state.defaultApiHeaders.cookie = cookie
-//     // scraper.state.defaultHeaders.cookie = cookie
+//     // TikTokApi.state.defaultApiHeaders.cookie = cookie
+//     // TikTokApi.state.defaultHeaders.cookie = cookie
 
-//     const usr = await scraper.user.info('_nvtaaa.a')
+//     const usr = await TikTokApi.user.info('_nvtaaa.a')
 //     console.log(usr);
-//     const data = await scraper.user.videos(usr.userInfo.id, usr.userInfo.secUid, 30, 0)
+//     const data = await TikTokApi.user.videos(usr.userInfo.id, usr.userInfo.secUid, 30, 0)
 
 //     console.log(data);
-//     // scraper.user.videos('MS4wLjABAAAAHYX7r5EzjxLQ7whZLAwpscERO7k4L18xgWqt0ShUj29dsupS6eH8LtCVWPVPDOzP', '0', '0').then(x => console.log(x))
+//     // TikTokApi.user.videos('MS4wLjABAAAAHYX7r5EzjxLQ7whZLAwpscERO7k4L18xgWqt0ShUj29dsupS6eH8LtCVWPVPDOzP', '0', '0').then(x => console.log(x))
 // })();
 
 
 async function getDownloadLink(id) {
-    const res = await axios.get('https://api2.musical.ly/aweme/v1/feed/?aweme_id=' + id, { headers })
+    const res = await axios.get('https://api16-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id=' + id, { headers })
     const filtered = res.data.aweme_list.find(x => x.aweme_id == id)
     return filtered.video.play_addr.url_list[0]
 }

@@ -1,7 +1,7 @@
 {
   "name": "tiktok-downloader",
-  "version": "1.0.2",
-  "description": "a tool for download all user tiktok videos with(out) watermark",
+  "version": "1.0.3",
+  "description": "a simple, lightweight tiktok all posts (video/image) downloader from a user",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
