@@ -163,8 +163,9 @@ async function searchUser(username) {
 async function getVideoList(secUid, count = 30, cursor = 0) {
     try {
         const TikTokApi = new TikTokClient();
-        TikTokApi.state.defaultHeaders = {
-            headers
+        TikTokApi.state.defaultApiHeaders = {
+            ...TikTokApi.state.defaultApiHeaders,
+            cookie,
         };
         const data = await TikTokApi.user.videos('', secUid, count, cursor)
         // console.log(data);

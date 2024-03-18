@@ -45,7 +45,6 @@ if (!fs.existsSync('cookie')) return console.log(chalk.redBright('[WARNING]'), '
                 `\n${chalk.hex('#56CCF2')('##### [ User Info ] #####')}\n` +
                 chalk.hex('#78ffd6')(
                     `@${selected.user_info.unique_id} | ${selected.user_info.nickname}\n` +
-                    `Private : ${selected.user_info.secret == 1 ? true : false}\n` +
                     `Followers : ${formatK(selected.user_info.follower_count)}\n`
                 )
             )
