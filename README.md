@@ -15,7 +15,7 @@ first, you will need a cookie 🍪 get cookie using [Copy Cookies](https://chrom
 git clone https://github.com/Gimenz/tiktok-downloader.git
 npm install
 npm start
-
+```
 ## Donate me
 - [PayPal](https://paypal.me/masgimenz)
 - [Saweria](https://saweria.co/masgimenz)
